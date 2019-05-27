@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title></title>
+  </head>
+  <body>
+    This demo requires a server in localhost. It won't work with the file:// protocol.<br>
+    <script>
+      function decode(data, orig_w = 500, orig_h = 300) {
+        const bytes = atob(data);
+        const [w, h, ...pixels] = bytes.split("").map(a => a.charCodeAt(0));
+
+        const canvas = document.createElement("canvas");
+        const ctx = canvas.getContext("2d");
+        canvas.width = w;
+        canvas.height = h;
+
+        var dataImage = ctx.createImageData(w, h);
+        dataImage.data.set(pixels);
+        ctx.putImageData(dataImage, 0, 0);
+        const src = canvas.toDataURL("image/png");
+
+        const img = new Image();
+        img.src = src;
+        img.width = orig_w;
+        img.height = orig_h;
+        document.body.appendChild(img);
+      }
+
+      function encode(url, w = 3, h = 3) {
+        return new Promise(resolve => {
+          const img = new Image();
+          img.crossOrigin = "anonymous";
+          img.onload = () => {
+            const canvas = document.createElement("canvas");
+            const ctx = canvas.getContext("2d");
+            canvas.width = w;
+            canvas.height = h;
+
+            ctx.drawImage(img, 0, 0, img.width, img.height, 0, 0, w, h);
+            const data = ctx.getImageData(0, 0, w, h);
+
+            const pixels = Array.prototype.slice.call(data.data);
+            const payload = [w, h, ...pixels];
+            const bytes = payload.map(a => String.fromCharCode(a)).join("");
+            const hash = btoa(bytes);
+
+            resolve(hash);
+          };
+          img.src = url;
+        });
+      }
+
+      encode(
+        "https://images.unsplash.com/photo-1464821541677-ceb53bcf1541"
+      ).then(hash => {
+        decode(hash);
+      });
+    </script>
+  </body>
+</html>
